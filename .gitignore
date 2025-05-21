@@ -1,0 +1,5 @@
+/challenge/debug/
+/challenge/target/
+
+**/*.rs.bk
+
