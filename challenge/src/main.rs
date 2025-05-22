@@ -26,16 +26,18 @@ fn create_db() -> Connection {
     .expect("Error on create the table on db");
     conn
 }
-fn main() {
-    let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
-    let db = create_db();
+fn insert_db(conn: Connection, nodes: Vec<Node>) {
     for node in &nodes {
-        db.execute(
+        conn.execute(
             "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?1, ?2, ?3, ?4)
             ON CONFLICT(pubkey) DO UPDATE SET capacity = EXCLUDED.capacity, first_seen = EXCLUDED.first_seen",
         (&node.pub_key, &node.alias, node.capacity, node.first_seen),
     )
     .expect("Could not insert into node table");
-        println!("{:?}", node)
     }
+}
+fn main() {
+    let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
+    let db = create_db();
+    insert_db(db, nodes);
 }
