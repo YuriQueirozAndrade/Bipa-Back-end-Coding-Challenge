@@ -26,7 +26,7 @@ fn create_db() -> Connection {
     .expect("Error on create the table on db");
     conn
 }
-fn insert_db(conn: Connection, nodes: Vec<Node>) {
+fn insert_db(conn: &Connection, nodes: Vec<Node>) {
     for node in &nodes {
         conn.execute(
             "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?1, ?2, ?3, ?4)
@@ -36,8 +36,26 @@ fn insert_db(conn: Connection, nodes: Vec<Node>) {
     .expect("Could not insert into node table");
     }
 }
+fn retrive_db(conn: &Connection) -> Vec<Node> {
+    let mut stmt = conn
+        .prepare("SELECT pubkey, alias, capacity, first_seen FROM node")
+        .expect("Error on prepare the sql query");
+    let node_inter = stmt
+        .query_map([], |row| {
+            Ok(Node {
+                pub_key: row.get(0).expect("Could not get pub_key"),
+                alias: row.get(1).expect("Could not get alias"),
+                capacity: row.get(2).expect("Could not get capacity"),
+                first_seen: row.get(3).expect("Could not get first_seen"),
+            })
+        })
+        .expect("Not is possible make the query for retrive all data from db");
+    let nodes: Vec<Node> = node_inter.filter_map(Result::ok).collect();
+    nodes
+}
 fn main() {
     let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
     let db = create_db();
-    insert_db(db, nodes);
+    insert_db(&db, nodes);
+    println!("{:?}", retrive_db(&db));
 }
