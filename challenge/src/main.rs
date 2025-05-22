@@ -31,9 +31,11 @@ fn main() {
     let db = create_db();
     for node in &nodes {
         db.execute(
-            "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?1, ?2, ?3, ?4)",
-            (&node.pub_key, &node.alias, node.capacity, node.first_seen),
-        )
-        .expect("Could not insert into node table");
+            "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?1, ?2, ?3, ?4)
+            ON CONFLICT(pubkey) DO UPDATE SET capacity = EXCLUDED.capacity, first_seen = EXCLUDED.first_seen",
+        (&node.pub_key, &node.alias, node.capacity, node.first_seen),
+    )
+    .expect("Could not insert into node table");
+        println!("{:?}", node)
     }
 }
