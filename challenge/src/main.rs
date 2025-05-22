@@ -1,4 +1,5 @@
 use reqwest::blocking::{Client, Response};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,9 +17,23 @@ fn retrive_node() -> Response {
         .send()
         .expect("Could not get data from the endpoint")
 }
-
+fn create_db() -> Connection {
+    let conn = Connection::open("./nodes.db").expect("Could not start a connection with data base");
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS node ( pubkey TEXT PRIMARY KEY, alias TEXT, capacity INTEGER, first_seen INTEGER)",
+        (),
+    )
+    .expect("Error on create the table on db");
+    conn
+}
 fn main() {
     let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
-
-    println!("{:?}", nodes);
+    let db = create_db();
+    for node in &nodes {
+        db.execute(
+            "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?1, ?2, ?3, ?4)",
+            (&node.pub_key, &node.alias, node.capacity, node.first_seen),
+        )
+        .expect("Could not insert into node table");
+    }
 }

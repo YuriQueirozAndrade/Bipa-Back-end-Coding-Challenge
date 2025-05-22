@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 reqwest ={ version =  "0.12.15", features = ["blocking","json"] }
+rusqlite = { version = "0.35.0", features = ["bundled"] }
 serde ={ version = "1.0.219"  , features = ["derive"] }
