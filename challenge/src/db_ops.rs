@@ -1,5 +1,9 @@
-use crate::node::Node;
+use crate::network::retrive_node;
+use crate::node::{Cache, Node};
 use rusqlite::Connection;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 pub fn create_db() -> Connection {
     let conn = Connection::open("./nodes.db").expect("Could not start a connection with data base");
@@ -39,4 +43,19 @@ pub fn retrive_db(conn: &Connection) -> Vec<Node> {
         .expect("Not is possible make the query for retrive all data from db");
     let nodes: Vec<Node> = node_inter.filter_map(Result::ok).collect();
     nodes
+}
+
+pub fn db_updater(db: Arc<Mutex<Connection>>, node_cache: Arc<Mutex<Cache>>) {
+    thread::spawn(move || loop {
+        {
+            let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
+            let locked_db = db.lock().unwrap();
+            insert_db(&locked_db, nodes);
+
+            let mut cache_lock = node_cache.lock().unwrap();
+            cache_lock.expired = true;
+        }
+        println!("Database Update");
+        thread::sleep(Duration::from_secs(10));
+    });
 }

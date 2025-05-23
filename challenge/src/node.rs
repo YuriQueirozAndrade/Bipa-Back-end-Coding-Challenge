@@ -1,4 +1,6 @@
+use crate::db_ops::retrive_db;
 use chrono::{TimeZone, Utc};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node {
@@ -13,6 +15,21 @@ pub struct Node {
     #[serde(rename = "firstSeen")]
     #[serde(serialize_with = "s_timestamp")]
     pub first_seen: i64,
+}
+pub struct Cache {
+    pub expired: bool,
+    pub nodes: Vec<Node>,
+}
+
+impl Cache {
+    pub fn call_data(&mut self, db: &Connection) -> Vec<Node> {
+        if self.expired {
+            print!("Cache exipired make a new request from db");
+            self.nodes = retrive_db(db);
+            self.expired = false;
+        }
+        self.nodes.clone()
+    }
 }
 
 fn s_capacity<S>(capacity: &u64, serializer: S) -> Result<S::Ok, S::Error>

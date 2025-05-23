@@ -1,4 +1,4 @@
-use crate::thread_ops::Cache;
+use crate::node::Cache;
 use reqwest::blocking::{Client, Response};
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};

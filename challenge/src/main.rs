@@ -1,7 +1,6 @@
-use challenge::db_ops::create_db;
+use challenge::db_ops::{create_db, db_updater};
 use challenge::network::{listener, stream};
-use challenge::thread_ops::Cache;
-use challenge::thread_ops::db_updater;
+use challenge::node::Cache;
 use std::sync::{Arc, Mutex};
 
 fn main() {
