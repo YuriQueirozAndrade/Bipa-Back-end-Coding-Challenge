@@ -1,4 +1,4 @@
-use crate::db_ops::retrive_db;
+use crate::thread_ops::Cache;
 use reqwest::blocking::{Client, Response};
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
@@ -16,11 +16,11 @@ pub fn retrive_node() -> Response {
 pub fn listener(str_bind: &str) -> TcpListener {
     TcpListener::bind(str_bind).expect("Could not bind the port")
 }
-pub fn stream(listener: TcpListener, db: Arc<Mutex<Connection>>) {
+pub fn stream(listener: TcpListener, node: Arc<Mutex<Cache>>, db: Arc<Mutex<Connection>>) {
     for stream in listener.incoming() {
-        let db_lock = db.lock().expect("Could not lock db");
-        let json = serde_json::to_string_pretty(&retrive_db(&db_lock))
-            .expect("Failed to convert data to JSON");
+        let locked_db = db.lock().unwrap();
+        let nodes_array = node.lock().unwrap().call_data(&locked_db);
+        let json = serde_json::to_string_pretty(&nodes_array).unwrap();
         response(stream.expect("Stream could not be established"), json);
     }
 }
@@ -34,7 +34,7 @@ pub fn response(mut stream: TcpStream, json: String) {
         "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{}",
         json
     );
-    println!("{} \n this is json response", json);
+    //println!("{} \n this is json response", json);
 
     stream
         .write_all(response.as_bytes())

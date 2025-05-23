@@ -1,6 +1,6 @@
 use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node {
     #[serde(rename = "publicKey")]
     pub pub_key: String,
