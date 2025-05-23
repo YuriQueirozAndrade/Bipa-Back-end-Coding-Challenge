@@ -1,8 +1,7 @@
 use challenge::db_ops::{create_db, insert_db};
-use challenge::network::{retrive_node, stream};
+use challenge::network::{listener, retrive_node, stream};
 use challenge::node::Node;
 use rusqlite::Connection;
-use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -21,7 +20,7 @@ fn db_updater(db: Arc<Mutex<Connection>>) {
 
 fn main() {
     let main_db = Arc::new(Mutex::new(create_db()));
-    let listener = TcpListener::bind("127.0.0.1:8080").expect("Could not bind the port");
+    let listener = listener("127.0.0.1:8080");
     db_updater(Arc::clone(&main_db));
     stream(listener, main_db);
 }

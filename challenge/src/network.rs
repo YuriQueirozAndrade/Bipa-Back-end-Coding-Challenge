@@ -13,6 +13,9 @@ pub fn retrive_node() -> Response {
         .send()
         .expect("Could not get data from the endpoint")
 }
+pub fn listener(str_bind: &str) -> TcpListener {
+    TcpListener::bind(str_bind).expect("Could not bind the port")
+}
 pub fn stream(listener: TcpListener, db: Arc<Mutex<Connection>>) {
     for stream in listener.incoming() {
         let db_lock = db.lock().expect("Could not lock db");
