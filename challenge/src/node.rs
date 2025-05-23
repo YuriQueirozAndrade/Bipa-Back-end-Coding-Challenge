@@ -16,6 +16,7 @@ pub struct Node {
     #[serde(serialize_with = "s_timestamp")]
     pub first_seen: i64,
 }
+#[derive(Default)]
 pub struct Cache {
     pub expired: bool,
     pub nodes: Vec<Node>,
@@ -29,6 +30,12 @@ impl Cache {
             self.expired = false;
         }
         self.nodes.clone()
+    }
+    pub fn new() -> Cache {
+        Cache {
+            expired: false,
+            nodes: Vec::new(),
+        }
     }
 }
 
