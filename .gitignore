@@ -1,6 +1,6 @@
 /challenge/debug/
 /challenge/target/
-/challenge/*.db
+**/*.db
 
 **/*.rs.bk
 
