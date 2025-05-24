@@ -77,17 +77,31 @@ pub fn retrive_db(conn: &Connection) -> Result<Vec<Node>, DbError> {
     }
 }
 
-pub fn db_updater(db: Arc<Mutex<Connection>>, node_cache: Arc<Mutex<Cache>>) {
+pub fn db_updater(
+    db: Arc<Mutex<Connection>>,
+    node_cache: Arc<Mutex<Cache>>,
+) -> Result<(), DbError> {
     thread::spawn(move || loop {
         {
-            let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
-            let mut locked_db = db.lock().unwrap();
-            let _ = insert_db(&mut locked_db, nodes);
-
-            let mut cache_lock = node_cache.lock().unwrap();
-            cache_lock.expired = true;
+            let mut locked_db = match db.lock() {
+                Ok(locked_db) => locked_db,
+                Err(_) => return DbError::UpdateError,
+            };
+            let mut cache_lock = match node_cache.lock() {
+                Ok(cache) => cache,
+                Err(_) => return DbError::UpdateError,
+            };
+            let nodes: Vec<Node> = match retrive_node().json() {
+                Ok(nodes) => nodes,
+                Err(_) => return DbError::UpdateError,
+            };
+            match insert_db(&mut locked_db, nodes) {
+                Ok(_) => cache_lock.expired = true,
+                Err(_) => return DbError::UpdateError,
+            };
         }
         println!("Database Update");
         thread::sleep(Duration::from_secs(10));
     });
+    Ok(())
 }
