@@ -1,7 +1,7 @@
 use crate::network::retrive_node;
 use crate::node::{Cache, Node};
 use rusqlite::Result;
-use rusqlite::{params, Connection, Transaction};
+use rusqlite::{params, Connection};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -11,17 +11,21 @@ pub enum DbError {
     CreateError,
     InsertError,
     RetriveError,
-    UpdateErro,
+    UpdateError,
 }
 
-pub fn create_db() -> Connection {
-    let conn = Connection::open("./nodes.db").expect("Could not start a connection with data base");
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS node ( pubkey TEXT PRIMARY KEY, alias TEXT, capacity INTEGER, first_seen INTEGER)",
-        (),
-    )
-    .expect("Error on create the table on db");
-    conn
+pub fn create_db() -> Result<Connection, DbError> {
+    match Connection::open("./nodes.db"){
+        Ok(conn) => {
+            match conn.execute(
+                "CREATE TABLE IF NOT EXISTS node (pubkey TEXT PRIMARY KEY, alias TEXT, capacity INTEGER, first_seen INTEGER)",()
+            ) {
+                Ok(_) => Ok(conn),
+                Err(_) => Err(DbError::CreateError),
+            }
+        }
+        Err(_) => Err(DbError::CreateError),
+    }
 }
 pub fn insert_db(conn: &mut Connection, nodes: Vec<Node>) -> Result<(), DbError> {
     let tx = match conn.transaction() {
