@@ -31,6 +31,7 @@ impl fmt::Display for DbError {
     }
 }
 
+// future improvment: make the error less verbose
 
 pub fn create_db() -> Result<Connection, DbError> {
     match Connection::open(DB_PATH){
@@ -51,7 +52,7 @@ pub fn create_db() -> Result<Connection, DbError> {
         }
     }
 }
-pub fn insert_db(conn: &mut Connection, nodes: Vec<Node>) -> Result<(), DbError> {
+ fn insert_db(conn: &mut Connection, nodes: Vec<Node>) -> Result<(), DbError> {
     if nodes.is_empty(){
         return Ok(());
     }

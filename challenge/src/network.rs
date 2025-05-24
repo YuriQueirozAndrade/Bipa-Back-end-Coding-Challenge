@@ -38,7 +38,7 @@ pub fn retrive_node() -> Result<Response, NetworkError> {
 pub fn listener(str_bind: &str) -> TcpListener {
     TcpListener::bind(str_bind).expect("Could not bind the port")
 }
-
+// future improvment: encapsule db_lock and nodes_lock on a function
 pub fn stream(
     listener: TcpListener,
     node: Arc<Mutex<Cache>>,
@@ -82,7 +82,7 @@ pub fn stream(
     Ok(())
 }
 
-pub fn response(mut stream: TcpStream, json: String) -> Result<(), NetworkError> {
+fn response(mut stream: TcpStream, json: String) -> Result<(), NetworkError> {
     let mut buffer = [0; 1024];
 
     if let Err(e) = stream.read(&mut buffer) {
