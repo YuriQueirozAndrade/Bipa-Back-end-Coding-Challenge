@@ -1,11 +1,11 @@
 use crate::network::retrive_node;
 use crate::node::{Cache, Node};
+use crate::constants::{DB_PATH, TIME_UPDATE};
 use rusqlite::{params, Connection, Result};
 use std::{
     fmt,
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
 };
 
 #[derive(Debug)]
@@ -33,7 +33,7 @@ impl fmt::Display for DbError {
 
 
 pub fn create_db() -> Result<Connection, DbError> {
-    match Connection::open("./nodes.db"){
+    match Connection::open(DB_PATH){
         Ok(conn) => {
             match conn.execute(
                 "CREATE TABLE IF NOT EXISTS node (pubkey TEXT PRIMARY KEY, alias TEXT, capacity INTEGER, first_seen INTEGER)",()
@@ -157,7 +157,7 @@ pub fn db_updater(
             };
         }
         println!("Database Update");
-        thread::sleep(Duration::from_secs(10));
+        thread::sleep(TIME_UPDATE);
     });
     Ok(())
 }

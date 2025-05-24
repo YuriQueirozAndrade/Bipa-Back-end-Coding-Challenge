@@ -1,3 +1,4 @@
+use crate::constants::{END_POINT_CHALLENGE, RETRIVE_NODES_URL};
 use crate::node::Cache;
 use reqwest::blocking::{Client, Response};
 use rusqlite::Connection;
@@ -26,10 +27,7 @@ impl fmt::Display for NetworkError {
 }
 
 pub fn retrive_node() -> Result<Response, NetworkError> {
-    match Client::new()
-        .get("https://mempool.space/api/v1/lightning/nodes/rankings/connectivity")
-        .send()
-    {
+    match Client::new().get(RETRIVE_NODES_URL).send() {
         Ok(response) => Ok(response),
         Err(e) => {
             eprintln!("Error on retrive data from node: {}", e);
@@ -93,7 +91,7 @@ pub fn response(mut stream: TcpStream, json: String) -> Result<(), NetworkError>
     }
 
     let request = String::from_utf8_lossy(&buffer);
-    let response = if request.starts_with("GET /nodes") {
+    let response = if request.starts_with(END_POINT_CHALLENGE) {
         format!(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{}",
             json

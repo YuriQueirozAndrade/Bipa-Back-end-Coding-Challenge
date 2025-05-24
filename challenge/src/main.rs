@@ -1,3 +1,4 @@
+use challenge::constants::{BIND, IP};
 use challenge::db_ops::{create_db, db_updater};
 use challenge::network::{listener, stream};
 use challenge::node::Cache;
@@ -8,5 +9,6 @@ fn main() {
     let start_cache = Arc::new(Mutex::new(Cache::new()));
 
     let _ = db_updater(Arc::clone(&main_db), Arc::clone(&start_cache));
-    let _ = stream(listener("127.0.0.1:8080"), start_cache, main_db);
+    let address = format!("{}:{}", IP, BIND);
+    let _ = stream(listener(&address), start_cache, main_db);
 }
