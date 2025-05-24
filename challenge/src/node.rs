@@ -26,7 +26,7 @@ impl Cache {
     pub fn call_data(&mut self, db: &Connection) -> Vec<Node> {
         if self.expired {
             print!("Cache exipired make a new request from db");
-            self.nodes = retrive_db(db);
+            self.nodes = retrive_db(db).expect("Could dont retrive data from db");
             self.expired = false;
         }
         self.nodes.clone()

@@ -1,10 +1,11 @@
 use crate::network::retrive_node;
 use crate::node::{Cache, Node};
-use rusqlite::Result;
-use rusqlite::{params, Connection};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+use rusqlite::{params, Connection, Result};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 #[derive(Debug)]
 pub enum DbError {
@@ -57,22 +58,23 @@ pub fn insert_db(conn: &mut Connection, nodes: Vec<Node>) -> Result<(), DbError>
         Err(_) => Err(DbError::InsertError),
     }
 }
-pub fn retrive_db(conn: &Connection) -> Vec<Node> {
-    let mut stmt = conn
-        .prepare("SELECT pubkey, alias, capacity, first_seen FROM node")
-        .expect("Error on prepare the sql query");
-    let node_inter = stmt
-        .query_map([], |row| {
-            Ok(Node {
-                pub_key: row.get(0).expect("Could not get pub_key"),
-                alias: row.get(1).expect("Could not get alias"),
-                capacity: row.get(2).expect("Could not get capacity"),
-                first_seen: row.get(3).expect("Could not get first_seen"),
-            })
+
+pub fn retrive_db(conn: &Connection) -> Result<Vec<Node>, DbError> {
+    let mut stmt = match conn.prepare("SELECT pubkey, alias, capacity, first_seen FROM node") {
+        Ok(stmt) => stmt,
+        Err(_) => return Err(DbError::RetriveError),
+    };
+    match stmt.query_map([], |row| {
+        Ok(Node {
+            pub_key: row.get(0)?,
+            alias: row.get(1)?,
+            capacity: row.get(2)?,
+            first_seen: row.get(3)?,
         })
-        .expect("Not is possible make the query for retrive all data from db");
-    let nodes: Vec<Node> = node_inter.filter_map(Result::ok).collect();
-    nodes
+    }) {
+        Ok(node_iter) => Ok(node_iter.filter_map(Result::ok).collect()),
+        Err(_) => Err(DbError::RetriveError),
+    }
 }
 
 pub fn db_updater(db: Arc<Mutex<Connection>>, node_cache: Arc<Mutex<Cache>>) {
