@@ -1,7 +1,7 @@
 use crate::db_ops::retrive_db;
 use chrono::{TimeZone, Utc};
 use rusqlite::Connection;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node {
     #[serde(rename = "publicKey")]
@@ -26,7 +26,13 @@ impl Cache {
     pub fn call_data(&mut self, db: &Connection) -> Vec<Node> {
         if self.expired {
             print!("Cache exipired make a new request from db");
-            self.nodes = retrive_db(db).expect("Could dont retrive data from db");
+            self.nodes = match retrive_db(db) {
+                Ok(nodes) => nodes,
+                Err(e) => {
+                    eprint!("Error on cache, fail to retrive_db: {}", e);
+                    Vec::new()
+                }
+            };
             self.expired = false;
         }
         self.nodes.clone()
@@ -41,15 +47,17 @@ impl Cache {
 
 fn s_capacity<S>(capacity: &u64, serializer: S) -> Result<S::Ok, S::Error>
 where
-    S: serde::Serializer,
+    S: Serializer,
 {
     serializer.serialize_f64(*capacity as f64 / 100_000_000.0)
 }
 
 fn s_timestamp<S>(timestamp: &i64, serializer: S) -> Result<S::Ok, S::Error>
 where
-    S: serde::Serializer,
+    S: Serializer,
 {
-    let datetime = Utc.timestamp_opt(*timestamp, 0).unwrap();
-    serializer.serialize_str(&datetime.to_rfc3339())
+    match Utc.timestamp_opt(*timestamp, 0).single() {
+        Some(datetime) => serializer.serialize_str(&datetime.to_rfc3339()),
+        None => Err(serde::ser::Error::custom("Invalid timestamp")),
+    }
 }
