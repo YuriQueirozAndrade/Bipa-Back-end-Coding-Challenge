@@ -141,7 +141,7 @@ pub fn db_updater(
                     return DbError::UpdateError
                 } 
             };
-            let nodes: Vec<Node> = match retrive_node().json() {
+            let nodes: Vec<Node> = match retrive_node().expect("").json() {
                 Ok(nodes) => nodes,
                 Err(e) => {
                     eprintln!("Error on call retrive_node: {}", e);
