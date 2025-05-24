@@ -1,9 +1,18 @@
 use crate::network::retrive_node;
 use crate::node::{Cache, Node};
-use rusqlite::Connection;
+use rusqlite::Result;
+use rusqlite::{params, Connection, Transaction};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+
+#[derive(Debug)]
+pub enum DbError {
+    CreateError,
+    InsertError,
+    RetriveError,
+    UpdateErro,
+}
 
 pub fn create_db() -> Connection {
     let conn = Connection::open("./nodes.db").expect("Could not start a connection with data base");
@@ -14,20 +23,37 @@ pub fn create_db() -> Connection {
     .expect("Error on create the table on db");
     conn
 }
-pub fn insert_db(conn: &Connection, nodes: Vec<Node>) {
-    for node in &nodes {
-        // Future improvment: try put all in one sql query,dont use the for loop
-        conn.execute(
-            "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?1, ?2, ?3, ?4)
-            ON CONFLICT(pubkey) DO UPDATE SET capacity = EXCLUDED.capacity, first_seen = EXCLUDED.first_seen",
-        (&node.pub_key, &node.alias, node.capacity, node.first_seen),
-    )
-    .expect("Could not insert into node table");
+pub fn insert_db(conn: &mut Connection, nodes: Vec<Node>) -> Result<(), DbError> {
+    let tx = match conn.transaction() {
+        Ok(transaction) => transaction,
+        Err(_) => return Err(DbError::InsertError),
+    };
+    {
+        let mut stmt = match  tx.prepare(
+            "INSERT INTO node (pubkey, alias, capacity, first_seen) VALUES (?, ?, ?, ?)
+            ON CONFLICT(pubkey) DO UPDATE SET capacity = EXCLUDED.capacity, first_seen = EXCLUDED.first_seen"
+            ) {
+            Ok(statement) => statement,
+            Err(_) => return  Err(DbError::InsertError),
+        };
+        for node in &nodes {
+            match stmt.execute(params![
+                &node.pub_key,
+                &node.alias,
+                node.capacity,
+                node.first_seen,
+            ]) {
+                Ok(_) => (),
+                Err(_) => return Err(DbError::InsertError),
+            }
+        }
+    }
+    match tx.commit() {
+        Ok(_) => Ok(()),
+        Err(_) => Err(DbError::InsertError),
     }
 }
 pub fn retrive_db(conn: &Connection) -> Vec<Node> {
-    // Future improvment:keep the json file in memorie, if data base donts update, send the in
-    // memmori json, if update, make a new query
     let mut stmt = conn
         .prepare("SELECT pubkey, alias, capacity, first_seen FROM node")
         .expect("Error on prepare the sql query");
@@ -49,8 +75,8 @@ pub fn db_updater(db: Arc<Mutex<Connection>>, node_cache: Arc<Mutex<Cache>>) {
     thread::spawn(move || loop {
         {
             let nodes: Vec<Node> = retrive_node().json().expect("Failed to parse JSON");
-            let locked_db = db.lock().unwrap();
-            insert_db(&locked_db, nodes);
+            let mut locked_db = db.lock().unwrap();
+            let _ = insert_db(&mut locked_db, nodes);
 
             let mut cache_lock = node_cache.lock().unwrap();
             cache_lock.expired = true;
