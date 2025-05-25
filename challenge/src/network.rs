@@ -26,6 +26,7 @@ impl fmt::Display for NetworkError {
     }
 }
 
+// future improvment: make the error handler return a empy json
 pub fn retrive_node() -> Result<Response, NetworkError> {
     match Client::new().get(RETRIVE_NODES_URL).send() {
         Ok(response) => Ok(response),
@@ -35,8 +36,14 @@ pub fn retrive_node() -> Result<Response, NetworkError> {
         }
     }
 }
-pub fn listener(str_bind: &str) -> TcpListener {
-    TcpListener::bind(str_bind).expect("Could not bind the port")
+pub fn listener(str_bind: &str) -> Result<TcpListener, NetworkError> {
+    match TcpListener::bind(str_bind) {
+        Ok(listener) => Ok(listener),
+        Err(e) => {
+            eprintln!("Error on create listener: {}", e);
+            Err(NetworkError::RetriveError)
+        }
+    }
 }
 // future improvment: encapsule db_lock and nodes_lock on a function
 pub fn stream(

@@ -4,11 +4,19 @@ use challenge::network::{listener, stream};
 use challenge::node::Cache;
 use std::sync::{Arc, Mutex};
 
+// improve error handler for recoveable
 fn main() {
-    let main_db = Arc::new(Mutex::new(create_db().expect("Could not create db")));
+    let main_db = Arc::new(Mutex::new(create_db().unwrap()));
     let start_cache = Arc::new(Mutex::new(Cache::new()));
 
     let _ = db_updater(Arc::clone(&main_db), Arc::clone(&start_cache));
     let address = format!("{}:{}", IP, BIND);
-    let _ = stream(listener(&address), start_cache, main_db);
+    let listener = match listener(&address) {
+        Ok(listener) => listener,
+        Err(e) => {
+            eprint!("Error on call listener:{}", e);
+            return;
+        }
+    };
+    let _ = stream(listener, start_cache, main_db);
 }
