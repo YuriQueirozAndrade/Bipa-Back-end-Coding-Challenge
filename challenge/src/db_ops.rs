@@ -74,6 +74,7 @@ pub fn create_db() -> Result<Connection, DbError> {
                 return  Err(DbError::InsertError)
             } 
         };
+        // furture improvment: review error handler of statament and commit
         for node in &nodes {
             match stmt.execute(params![
                 &node.pub_key,
@@ -106,6 +107,7 @@ pub fn retrive_db(conn: &Connection) -> Result<Vec<Node>, DbError> {
             return Err(DbError::RetriveError)
         } 
     };
+    // // future improvment: review error handler of query map
     match stmt.query_map([], |row| {
         Ok(Node {
             pub_key: row.get(0)?,
@@ -142,8 +144,14 @@ pub fn db_updater(
                     return DbError::UpdateError
                 } 
             };
-            let nodes: Vec<Node> = match retrive_node().expect("").json() {
-                Ok(nodes) => nodes,
+            let nodes: Vec<Node> = match retrive_node(){
+                Ok(nodes) => match nodes.json(){
+                    Ok(json) => json,
+                    Err(e) => {
+                        eprintln!("Error on json parse: {}", e);
+                        return DbError::UpdateError
+                    } 
+                },
                 Err(e) => {
                     eprintln!("Error on call retrive_node: {}", e);
                     return DbError::UpdateError
@@ -162,3 +170,66 @@ pub fn db_updater(
     });
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_insert_empty_nodes() {
+        let mut db = Connection::open_in_memory().unwrap();
+        let empty_nodes: Vec<Node> = Vec::new();
+        assert!(insert_db(&mut db, empty_nodes).is_ok(), "insert_db empty node list sucess");
+    }
+
+    #[test]
+    fn test_insert_empty_table() {
+        let mut db = Connection::open_in_memory().unwrap();
+
+        let nodes = vec![Node {
+            pub_key: "03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f".to_string(),
+            alias: "ACINQ".to_string(),
+            capacity: 2908,
+            first_seen: 1522941222,
+        }];
+
+        db.execute("DROP TABLE IF EXISTS node", []).unwrap();
+        assert!(insert_db(&mut db, nodes.clone()).is_err(), "insert_db in a empty table error");
+    }
+
+    #[test]
+    fn test_insert_success() {
+        let mut db = Connection::open_in_memory().unwrap();
+
+        db.execute(
+            "CREATE TABLE node (pubkey TEXT PRIMARY KEY, alias TEXT, capacity INTEGER, first_seen INTEGER)",
+            [],
+        ).unwrap();
+
+        let nodes = vec![Node {
+            pub_key: "03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f".to_string(),
+            alias: "ACINQ".to_string(),
+            capacity: 2908,
+            first_seen: 1522941222,
+        }];
+        assert!(insert_db(&mut db, nodes.clone()).is_ok(), "insert_db in a table sucess");
+    }
+    #[test]
+    fn test_retrive_empty_table(){
+        let db = Connection::open_in_memory().unwrap();
+        assert!(retrive_db(&db).is_err(), "retrive data in a empty table err")
+    }
+    #[test]
+    fn test_retrive_table(){
+        let mut db = create_db().unwrap();
+        let nodes = vec![Node {
+            pub_key: "03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f".to_string(),
+            alias: "ACINQ".to_string(),
+            capacity: 2908,
+            first_seen: 1522941222,
+        }];
+        insert_db(&mut db, nodes).unwrap();
+        assert!(retrive_db(&db).is_ok(), "retrive data in a exist table is sucess")
+    }
+}
+
