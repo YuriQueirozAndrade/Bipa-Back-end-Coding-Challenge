@@ -124,6 +124,10 @@ pub fn retrive_db(conn: &Connection) -> Result<Vec<Node>, DbError> {
     }
 }
 
+//Sheduler a task: this function is call in another thread and from time to time
+//Inster the data retrive by the end point from mempool
+//Get the Cache struct change the expired for true
+
 pub fn db_updater(
     db: Arc<Mutex<Connection>>,
     node_cache: Arc<Mutex<Cache>>,

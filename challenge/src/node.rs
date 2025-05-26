@@ -25,11 +25,11 @@ pub struct Cache {
 impl Cache {
     pub fn call_data(&mut self, db: &Connection) -> Vec<Node> {
         if self.expired {
-            print!("Cache exipired make a new request from db");
+            println!("Cache exipired make a new request from db");
             self.nodes = match retrive_db(db) {
                 Ok(nodes) => nodes,
                 Err(e) => {
-                    eprint!("Error on cache, fail to retrive_db: {}", e);
+                    eprintln!("Error on cache, fail to retrive_db: {}", e);
                     Vec::new()
                 }
             };

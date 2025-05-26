@@ -11,11 +11,12 @@ fn main() {
 
     let _ = db_updater(Arc::clone(&main_db), Arc::clone(&start_cache));
     let address = format!("{}:{}", IP, BIND);
-    let listener = match listener(&address) {
-        Ok(listener) => listener,
-        Err(e) => {
-            eprint!("Error on call listener:{}", e);
-            return;
+    let listener = loop {
+        match listener(&address) {
+            Ok(listener) => break listener,
+            Err(e) => {
+                eprint!("Error on call listener:{}", e);
+            }
         }
     };
     let _ = stream(listener, start_cache, main_db);
