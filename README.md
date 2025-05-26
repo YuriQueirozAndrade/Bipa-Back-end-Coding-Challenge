@@ -40,6 +40,7 @@ cargo test --manifest-path ./challenge/Cargo.toml
 ## How My Solution Solves This
 
 Look at this diagram.
+![Diagram](https://i.postimg.cc/XqSr2057/Untitled-2025-03-25-0938-2.png)
 
 As you can see, my solution consists of two things:
 
