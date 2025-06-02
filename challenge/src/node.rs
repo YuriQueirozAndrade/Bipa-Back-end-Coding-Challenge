@@ -1,4 +1,4 @@
-use crate::db_ops::retrive_db;
+use crate::db_ops::{retrive_db, retrive_db_order_by};
 use chrono::{TimeZone, Utc};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize, Serializer};
@@ -24,9 +24,23 @@ pub struct Cache {
 
 impl Cache {
     pub fn call_data(&mut self, db: &Connection) -> Vec<Node> {
-        if self.expired {
+        if true {
             println!("Cache exipired make a new request from db");
             self.nodes = match retrive_db(db) {
+                Ok(nodes) => nodes,
+                Err(e) => {
+                    eprintln!("Error on cache, fail to retrive_db: {}", e);
+                    Vec::new()
+                }
+            };
+            self.expired = false;
+        }
+        self.nodes.clone()
+    }
+    pub fn call_data_oderder_by(&mut self, db: &Connection) -> Vec<Node> {
+        if true {
+            println!("Cache exipired make a new request from db");
+            self.nodes = match retrive_db_order_by(db) {
                 Ok(nodes) => nodes,
                 Err(e) => {
                     eprintln!("Error on cache, fail to retrive_db: {}", e);

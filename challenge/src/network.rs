@@ -67,8 +67,22 @@ pub fn stream(
                 continue;
             }
         };
+        let nodes_array_order_by = match node.lock() {
+            Ok(mut nodes_array) => nodes_array.call_data_oderder_by(&locked_db),
+            Err(e) => {
+                eprintln!("Error on acess node data: {}", e);
+                continue;
+            }
+        };
 
         let json = match serde_json::to_string_pretty(&nodes_array) {
+            Ok(json) => json,
+            Err(e) => {
+                eprintln!("Error on serilize node to json: {}", e);
+                continue;
+            }
+        };
+        let json_order_by = match serde_json::to_string_pretty(&nodes_array_order_by) {
             Ok(json) => json,
             Err(e) => {
                 eprintln!("Error on serilize node to json: {}", e);
@@ -78,7 +92,7 @@ pub fn stream(
 
         match stream {
             Ok(stream) => {
-                if let Err(e) = response(stream, json) {
+                if let Err(e) = response(stream, json, json_order_by) {
                     eprintln!("Error on respond stream: {}", e);
                 }
             }
@@ -89,7 +103,11 @@ pub fn stream(
     Ok(())
 }
 
-fn response(mut stream: TcpStream, json: String) -> Result<(), NetworkError> {
+fn response(
+    mut stream: TcpStream,
+    json: String,
+    json_order_by: String,
+) -> Result<(), NetworkError> {
     let mut buffer = [0; 1024];
 
     if let Err(e) = stream.read(&mut buffer) {
@@ -98,7 +116,13 @@ fn response(mut stream: TcpStream, json: String) -> Result<(), NetworkError> {
     }
 
     let request = String::from_utf8_lossy(&buffer);
-    let response = if request.starts_with(END_POINT_CHALLENGE) {
+    println!("Buffer: {}", request);
+    let response = if request.starts_with("GET /nodes?order=capacity") {
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{}",
+            json_order_by
+        )
+    } else if request.starts_with("GET /nodes") {
         format!(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{}",
             json

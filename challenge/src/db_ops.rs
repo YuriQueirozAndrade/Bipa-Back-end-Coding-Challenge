@@ -123,6 +123,30 @@ pub fn retrive_db(conn: &Connection) -> Result<Vec<Node>, DbError> {
         } 
     }
 }
+pub fn retrive_db_order_by(conn: &Connection) -> Result<Vec<Node>, DbError> {
+    let mut stmt = match conn.prepare("SELECT pubkey, alias, capacity, first_seen FROM node ORDER BY capacity ") {
+        Ok(stmt) => stmt,
+        Err(e) => {
+            eprintln!("Error on execute statament: {}", e);
+            return Err(DbError::RetriveError)
+        } 
+    };
+    // // future improvment: review error handler of query map
+    match stmt.query_map([], |row| {
+        Ok(Node {
+            pub_key: row.get(0)?,
+            alias: row.get(1)?,
+            capacity: row.get(2)?,
+            first_seen: row.get(3)?,
+        })
+    }) {
+        Ok(node_iter) => Ok(node_iter.filter_map(Result::ok).collect()),
+        Err(e) => {
+            eprintln!("Error on retribe nodes: {}", e);
+            Err(DbError::RetriveError)
+        } 
+    }
+}
 
 //Sheduler a task: this function is call in another thread and from time to time
 //Inster the data retrive by the end point from mempool
